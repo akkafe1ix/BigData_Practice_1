@@ -11,6 +11,8 @@ from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 from collections import Counter
 from matplotlib.colors import ListedColormap
+from sklearn.metrics import roc_curve
+
 
 # Реализация KNN с нуля
 class KNN:
@@ -155,6 +157,29 @@ with tab_results:
     st.write("### Результаты моделей:")
     results_df = pd.DataFrame(results, index=["Accuracy", "Precision", "Recall", "F1-score", "ROC-AUC"])
     st.dataframe(results_df.T)
+
+    def plot_roc_curve(y_train, y_train_prob, y_test, y_test_prob, model_name):
+        fpr_train, tpr_train, _ = roc_curve(y_train, y_train_prob)
+        fpr_test, tpr_test, _ = roc_curve(y_test, y_test_prob)
+        
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.plot(fpr_train, tpr_train, color='green', label=f'ROC curve Train - {model_name}')
+        ax.plot(fpr_test, tpr_test, color='blue', label=f'ROC curve Test - {model_name}')
+        ax.plot([0, 1], [0, 1], color='gray', linestyle='--')
+        ax.set_xlabel('False Positive Rate')
+        ax.set_ylabel('True Positive Rate')
+        ax.set_title(f'ROC Curve for {model_name}')
+        ax.legend()
+        st.pyplot(fig)
+    
+    st.write("### ROC-кривые моделей:")
+
+    # Вызов функции построения ROC-кривой после обучения всех моделей
+    for name, model in models.items():
+        if hasattr(model, "predict_proba"):
+            y_train_prob = model.predict_proba(X_train)[:, 1]
+            y_test_prob = model.predict_proba(X_val)[:, 1]
+            plot_roc_curve(y_train, y_train_prob, y_val, y_test_prob,name)
 
     best_model = max(results, key=lambda x: results[x][-1] if isinstance(results[x][-1], float) else results[x][-2])
     st.write(f"### Лучшая модель: {best_model}")
